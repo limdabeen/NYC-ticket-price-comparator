@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>뉴욕 패스 비교 결과</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 20px; }
+        .result-table { width: 80%; border-collapse: collapse; margin-top: 20px; }
+        .result-table th, .result-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .result-table th { background-color: #f2f2f2; }
+        .best-deal { background-color: #d4edda; font-weight: bold; }
+        .recommendation { margin-top: 30px; padding: 15px; border: 2px solid #007bff; border-radius: 5px; }
+        .price { color: #dc3545; font-weight: bold; }
+        .savings { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+<h1>✅ 가격 비교 결과</h1>
+<p>선택하신 관광지 개수: <span th:text="${selectedCount}">0</span>개</p>
+
+<h2>💵 예상 비용 비교 (성인 1인 기준)</h2>
+
+<table class="result-table">
+    <tr>
+        <th>구매 옵션</th>
+        <th>최종 비용 ($)</th>
+        <th>절약 금액</th>
+        <th>상세 분석 / 적합성</th>
+        <th>구매 링크</th>
+    </tr>
+
+    <tr th:each="result : ${comparisonResults}" th:class="${result.isBestDeal ? 'best-deal' : ''}">
+        <td>
+            <span th:text="${result.optionName}">옵션 이름</span>
+            <span th:if="${result.isBestDeal}" style="color: red;">(최저가!)</span>
+        </td>
+        <td class="price" th:text="${result.finalPrice}">0</td>
+        <td class="savings" th:text="${result.savings > 0 ? '$' + result.savings : '-'}"></td>
+        <td>
+            <span th:utext="${result.recommendationText}">상세 추천 메시지</span>
+        </td>
+        <td>
+            <a th:if="${result.purchaseLink != null}" th:href="${result.purchaseLink}" target="_blank">
+                구매하기
+            </a>
+            <span th:unless="${result.purchaseLink != null}">해당 없음</span>
+        </td>
+    </tr>
+</table>
+
+<p style="margin-top: 30px;"><a href="/">다시 비교하기</a></p>
+</body>
+</html>

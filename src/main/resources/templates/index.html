@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>뉴욕 패스 비교 계산기</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 20px; }
+        .attraction-list, .recommended-list { margin-top: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+        .attraction-list div, .recommended-list div { margin-bottom: 8px; }
+        .price { font-weight: bold; color: #007bff; }
+        .category-filter button { padding: 5px 10px; margin-right: 5px; cursor: pointer; border: 1px solid #ccc; border-radius: 3px; }
+        .category-filter button:hover { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+<h1>🗽 뉴욕 여행 패스 최저가 계산기</h1>
+<p>방문하고 싶은 관광지를 선택하고, 가장 현명한 구매 옵션을 확인하세요.</p>
+
+<form action="/compare" method="post">
+    <h2>1. 추천 여행지 및 카테고리별 선택</h2>
+
+    <h3>🌟 추천 TOP 3 (높은 선호도 순)</h3>
+    <div class="recommended-list">
+        <div th:each="rec : ${recommended}">
+            <input type="checkbox" th:id="${rec.id + '_rec'}" name="selectedAttractions" th:value="${rec.id}">
+            <label th:for="${rec.id + '_rec'}">
+                <span th:text="${rec.name}"></span>
+                (추천 점수: <span th:text="${rec.recommendationScore}"></span>점 | 개별가: $<span class="price" th:text="${rec.individualPrice}"></span>)
+                <a th:href="${rec.officialLink}" target="_blank" style="margin-left: 10px; font-size: 0.9em;">[공식 링크]</a>
+            </label>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 20px;">모든 관광지</h3>
+    <div class="category-filter">
+        <button type="button" onclick="filterAttractions('All')">전체 보기</button>
+        <button type="button" th:each="cat : ${categories}" onclick="filterAttractions([[${cat}]])" th:text="${cat}"></button>
+    </div>
+
+    <div class="attraction-list" id="attraction-list-container">
+        <div th:each="attraction : ${attractions}" th:data-category="${attraction.category}">
+            <input type="checkbox"
+                   th:id="${attraction.id}"
+                   name="selectedAttractions"
+                   th:value="${attraction.id}">
+            <label th:for="${attraction.id}">
+                <span th:text="${attraction.name}">관광지 이름</span>
+                (<span th:text="${attraction.category}">카테고리</span> | 개별가: $<span class="price" th:text="${attraction.individualPrice}">0</span>)
+            </label>
+        </div>
+    </div>
+
+    <button type="submit" style="margin-top: 20px; padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        가격 비교 시작!
+    </button>
+</form>
+
+<script>
+    function filterAttractions(category) {
+        const container = document.getElementById('attraction-list-container');
+        const items = container.children;
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const itemCategory = item.getAttribute('data-category');
+
+            if (category === 'All' || itemCategory === category) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        }
+    }
+    // 페이지 로드 시 전체 보기 버튼 클릭 효과
+    window.onload = () => filterAttractions('All');
+</script>
+</body>
+</html>
