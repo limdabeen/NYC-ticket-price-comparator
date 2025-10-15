@@ -1,78 +1,102 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>뉴욕 패스 비교 계산기</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC 최저가 비교</title>
     <style>
-        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 20px; }
-        .attraction-list, .recommended-list { margin-top: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
-        .attraction-list div, .recommended-list div { margin-bottom: 8px; }
-        .price { font-weight: bold; color: #007bff; }
-        .category-filter button { padding: 5px 10px; margin-right: 5px; cursor: pointer; border: 1px solid #ccc; border-radius: 3px; }
-        .category-filter button:hover { background-color: #f0f0f0; }
+        body { font-family: 'Arial', sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; margin-bottom: 25px; }
+        .category-selector { text-align: center; margin-bottom: 30px; }
+        .category-selector a {
+            padding: 10px 20px; margin: 0 10px; border: 1px solid #ddd;
+            text-decoration: none; color: #555; border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .category-selector a.active { background-color: #007bff; color: white; border-color: #007bff; }
+        .list-header { font-size: 1.5em; color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        form { margin-top: 20px; }
+        .item-list { list-style: none; padding: 0; }
+        .item-list li {
+            padding: 12px; margin-bottom: 8px; border: 1px solid #eee; border-radius: 5px;
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #fff;
+        }
+        .item-info { flex-grow: 1; }
+        .item-name { font-weight: bold; font-size: 1.1em; color: #333; }
+        .item-detail { font-size: 0.9em; color: #777; }
+        .price { font-weight: bold; color: #28a745; margin-right: 15px; }
+        .submit-btn {
+            display: block; width: 100%; padding: 15px; background-color: #28a745;
+            color: white; border: none; border-radius: 5px; font-size: 1.2em;
+            cursor: pointer; margin-top: 20px; transition: background-color 0.2s;
+        }
+        .submit-btn:hover { background-color: #218838; }
+        .recommendation { background-color: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        .recommendation h3 { margin-top: 0; color: #007bff; font-size: 1.2em; }
     </style>
 </head>
 <body>
-<h1>🗽 뉴욕 여행 패스 최저가 계산기</h1>
-<p>방문하고 싶은 관광지를 선택하고, 가장 현명한 구매 옵션을 확인하세요.</p>
+<div class="container">
+    <h1>뉴욕 최저가 비교 시스템</h1>
 
-<form action="/compare" method="post">
-    <h2>1. 추천 여행지 및 카테고리별 선택</h2>
+    <div class="category-selector">
+        <a th:href="@{/(category='ticket')}"
+           th:class="${currentCategory == 'ticket'} ? 'active' : ''">
+            🎫 입장권/티켓
+        </a>
+        <a th:href="@{/(category='musical')}"
+           th:class="${currentCategory == 'musical'} ? 'active' : ''">
+            🎭 뮤지컬
+        </a>
+    </div>
 
-    <h3>🌟 추천 TOP 3 (높은 선호도 순)</h3>
-    <div class="recommended-list">
-        <div th:each="rec : ${recommended}">
-            <input type="checkbox" th:id="${rec.id + '_rec'}" name="selectedAttractions" th:value="${rec.id}">
-            <label th:for="${rec.id + '_rec'}">
-                <span th:text="${rec.name}"></span>
-                (추천 점수: <span th:text="${rec.recommendationScore}"></span>점 | 개별가: $<span class="price" th:text="${rec.individualPrice}"></span>)
-                <a th:href="${rec.officialLink}" target="_blank" style="margin-left: 10px; font-size: 0.9em;">[공식 링크]</a>
-            </label>
+    <div th:if="${currentCategory == 'ticket'}">
+        <div class="list-header">입장권/티켓 선택 목록 (패스 비교)</div>
+
+        <div th:if="${recommendedItems != null}" class="recommendation">
+            <h3>⭐ 추천 관광지</h3>
+            <div class="item-detail" th:each="item : ${recommendedItems}">
+                - [[${item.name}]] (추천 점수: [[${item.recommendationScore}]]점)
+            </div>
         </div>
+
+        <form th:action="@{/compare}" method="post">
+            <ul class="item-list">
+                <li th:each="item : ${items}">
+                    <input type="checkbox" name="selectedAttractions" th:id="${item.id}" th:value="${item.id}">
+                    <div class="item-info">
+                        <label th:for="${item.id}" class="item-name">[[${item.name}]]</label>
+                        <div class="item-detail">
+                            카테고리: [[${item.category}]] | 개별 공식 가격: <span class="price">$[[${item.individualPrice}]]</span>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button type="submit" class="submit-btn">선택된 [[${items.size()}]]개 관광지 최저가 비교 시작</button>
+        </form>
     </div>
 
-    <h3 style="margin-top: 20px;">모든 관광지</h3>
-    <div class="category-filter">
-        <button type="button" onclick="filterAttractions('All')">전체 보기</button>
-        <button type="button" th:each="cat : ${categories}" onclick="filterAttractions([[${cat}]])" th:text="${cat}"></button>
+    <div th:if="${currentCategory == 'musical'}">
+        <div class="list-header">뮤지컬 최저가 비교 목록 (판매처 비교)</div>
+
+        <form>
+            <ul class="item-list">
+                <li th:each="item : ${items}">
+                    <div class="item-info">
+                        <div class="item-name">🎭 [[${item.name}]]</div>
+                        <div class="item-detail">
+                            추천: [[${item.recommendationScore}]] |
+                            최저가 (앳홈트립): <span class="price">$[[${item.athomeTripPrice}]]</span>
+                        </div>
+                    </div>
+                    <a th:href="@{/compare/musical(id=${item.id})}" class="submit-btn" style="width: 150px; padding: 10px;">가격 비교</a>
+                </li>
+            </ul>
+        </form>
     </div>
 
-    <div class="attraction-list" id="attraction-list-container">
-        <div th:each="attraction : ${attractions}" th:data-category="${attraction.category}">
-            <input type="checkbox"
-                   th:id="${attraction.id}"
-                   name="selectedAttractions"
-                   th:value="${attraction.id}">
-            <label th:for="${attraction.id}">
-                <span th:text="${attraction.name}">관광지 이름</span>
-                (<span th:text="${attraction.category}">카테고리</span> | 개별가: $<span class="price" th:text="${attraction.individualPrice}">0</span>)
-            </label>
-        </div>
-    </div>
-
-    <button type="submit" style="margin-top: 20px; padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
-        가격 비교 시작!
-    </button>
-</form>
-
-<script>
-    function filterAttractions(category) {
-        const container = document.getElementById('attraction-list-container');
-        const items = container.children;
-
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const itemCategory = item.getAttribute('data-category');
-
-            if (category === 'All' || itemCategory === category) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
-        }
-    }
-    // 페이지 로드 시 전체 보기 버튼 클릭 효과
-    window.onload = () => filterAttractions('All');
-</script>
+</div>
 </body>
 </html>

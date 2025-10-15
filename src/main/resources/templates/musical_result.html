@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뮤지컬 가격 비교 결과</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        h1 { text-align: center; color: #007bff; margin-bottom: 5px; }
+        h2 { text-align: center; color: #333; margin-top: 0; margin-bottom: 30px; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #333; font-weight: bold; }
+        .best-deal td { background-color: #d4edda; font-weight: bold; border-left: 5px solid #28a745; color: #155724; }
+        .savings { color: #28a745; font-weight: bold; }
+        .link a { text-decoration: none; color: #007bff; font-weight: bold; }
+        .link a:hover { text-decoration: underline; }
+        .recommendation-text { font-size: 0.9em; color: #555; }
+        .back-link { display: block; text-align: center; margin-top: 30px; font-size: 1.1em; color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>가격 비교 결과</h1>
+    <h2 th:text="${musicalName} + ' 최저가 분석'">뮤지컬 최저가 분석</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>판매처/옵션</th>
+            <th>최종 가격 ($)</th>
+            <th>절약 금액 ($)</th>
+            <th>추천 및 장점</th>
+            <th>구매 링크</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="result : ${results}"
+            th:class="${result.isBestDeal() ? 'best-deal' : ''}">
+
+            <td th:text="${result.optionName}">판매처 이름</td>
+            <td th:text="'$' + ${result.finalPrice}">$140</td>
+
+            <td>
+                        <span th:if="${result.savings > 0}" class="savings">
+                            $[[${result.savings}]] 절약
+                        </span>
+                <span th:unless="${result.savings > 0}">
+                            -
+                        </span>
+            </td>
+
+            <td>
+                <div th:utext="${result.recommendationText}" class="recommendation-text">추천 메시지</div>
+            </td>
+
+            <td class="link">
+                <a th:href="${result.purchaseLink}" target="_blank">바로 가기 →</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <a th:href="@{/(category='musical')}" class="back-link">← 다른 뮤지컬 비교하기</a>
+</div>
+</body>
+</html>
