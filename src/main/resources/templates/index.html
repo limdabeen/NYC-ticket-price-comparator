@@ -27,12 +27,39 @@
         .item-name { font-weight: bold; font-size: 1.1em; color: #333; }
         .item-detail { font-size: 0.9em; color: #777; }
         .price { font-weight: bold; color: #28a745; margin-right: 15px; }
+
+        /* [추가] 버튼을 가로로 배열하기 위한 스타일 */
+        .form-actions {
+            display: flex;
+            gap: 10px; /* 버튼 사이 간격 */
+            margin-top: 20px;
+        }
+
+        /* [수정] 제출 버튼 스타일 (width: 100% 대신 flex-grow: 3) */
         .submit-btn {
-            display: block; width: 100%; padding: 15px; background-color: #28a745;
+            flex-grow: 3; /* 비교 시작 버튼이 초기화 버튼보다 크게 */
+            padding: 15px;
+            background-color: #28a745;
             color: white; border: none; border-radius: 5px; font-size: 1.2em;
-            cursor: pointer; margin-top: 20px; transition: background-color 0.2s;
+            cursor: pointer; transition: background-color 0.2s;
+            width: auto; /* width: 100% 제거 */
         }
         .submit-btn:hover { background-color: #218838; }
+
+        /* [추가] 초기화 버튼 스타일 */
+        .reset-btn {
+            flex-grow: 1; /* 비교 시작 버튼보다 작게 */
+            padding: 15px;
+            background-color: #6c757d; /* 회색 계열 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .reset-btn:hover { background-color: #5a6268; }
+
         .recommendation { background-color: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
         .recommendation h3 { margin-top: 0; color: #007bff; font-size: 1.2em; }
     </style>
@@ -62,7 +89,7 @@
             </div>
         </div>
 
-        <form th:action="@{/compare}" method="post">
+        <form th:action="@{/compare}" method="post" id="attractionForm">
             <ul class="item-list">
                 <li th:each="item : ${items}">
                     <input type="checkbox" name="selectedAttractions" th:id="${item.id}" th:value="${item.id}">
@@ -74,7 +101,15 @@
                     </div>
                 </li>
             </ul>
-            <button type="submit" class="submit-btn">선택된 [[${items.size()}]]개 관광지 최저가 비교 시작</button>
+
+            <div class="form-actions">
+                <button type="button" onclick="document.getElementById('attractionForm').reset()" class="reset-btn">
+                    선택 초기화
+                </button>
+                <button type="submit" class="submit-btn">
+                    선택된 관광지 최저가 비교 시작
+                </button>
+            </div>
         </form>
     </div>
 
