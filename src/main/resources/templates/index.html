@@ -24,9 +24,42 @@
             background-color: #fff;
         }
         .item-info { flex-grow: 1; }
-        .item-name { font-weight: bold; font-size: 1.1em; color: #333; }
+        .item-name {
+            font-weight: bold; font-size: 1.1em; color: #333;
+            cursor: pointer; /* 클릭 가능하다는 표시 */
+            text-decoration: underline; /* 클릭 가능하다는 시각적 표시 */
+            text-underline-offset: 3px;
+        }
         .item-detail { font-size: 0.9em; color: #777; }
         .price { font-weight: bold; color: #28a745; margin-right: 15px; }
+
+        /* [추가] 인원수 입력 필드 스타일 */
+        .personnel-input {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .personnel-group {
+            flex: 1;
+        }
+        .personnel-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .personnel-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            text-align: center;
+        }
 
         /* [추가] 버튼을 가로로 배열하기 위한 스타일 */
         .form-actions {
@@ -62,6 +95,47 @@
 
         .recommendation { background-color: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
         .recommendation h3 { margin-top: 0; color: #007bff; font-size: 1.2em; }
+
+        /* [추가] 모달 스타일 (이전 단계에서 추가됨) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: #000;
+            text-decoration: none;
+        }
+        .modal-title { font-size: 1.8em; color: #007bff; margin-bottom: 15px; }
+        .modal-body p { margin: 10px 0; font-size: 1em; line-height: 1.5; }
+        .modal-label { font-weight: bold; color: #555; display: block; margin-bottom: 3px; }
+        .modal-link { display: inline-block; margin-top: 15px; padding: 10px 15px; background-color: #28a745; color: white; border-radius: 5px; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -90,11 +164,25 @@
         </div>
 
         <form th:action="@{/compare}" method="post" id="attractionForm">
+
+            <div class="personnel-input">
+                <div class="personnel-group">
+                    <label for="adults">성인 인원 (13세 이상)</label>
+                    <input type="number" id="adults" name="adults" value="2" min="1" required>
+                </div>
+                <div class="personnel-group">
+                    <label for="children">아동 인원 (12세 이하)</label>
+                    <input type="number" id="children" name="children" value="0" min="0" required>
+                </div>
+            </div>
             <ul class="item-list">
                 <li th:each="item : ${items}">
                     <input type="checkbox" name="selectedAttractions" th:id="${item.id}" th:value="${item.id}">
                     <div class="item-info">
-                        <label th:for="${item.id}" class="item-name">[[${item.name}]]</label>
+                        <span th:onclick="'showDetailModal(\'' + ${item.name} + '\', \'' + ${item.category} + '\', \'' + ${item.description} + '\', \'' + ${item.operationHours} + '\', \'' + ${item.individualPrice} + '\', \'' + ${item.purchaseLink} + '\')'"
+                              class="item-name">
+                              [[${item.name}]]
+                        </span>
                         <div class="item-detail">
                             카테고리: [[${item.category}]] | 개별 공식 가격: <span class="price">$[[${item.individualPrice}]]</span>
                         </div>
@@ -133,5 +221,50 @@
     </div>
 
 </div>
+
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h3 id="modalTitle" class="modal-title"></h3>
+        <div class="modal-body">
+            <p><span class="modal-label">카테고리:</span> <span id="modalCategory"></span></p>
+            <p><span class="modal-label">개별 가격:</span> <span id="modalPrice"></span></p>
+            <p><span class="modal-label">운영 시간:</span> <span id="modalHours"></span></p>
+            <p><span class="modal-label">상세 설명:</span> <span id="modalDescription"></span></p>
+            <a id="modalLink" href="#" target="_blank" class="modal-link">공식 홈페이지 바로가기</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    var modal = document.getElementById("detailModal");
+    var closeBtn = document.getElementsByClassName("close-btn")[0];
+
+    // 1. 모달 열기 함수
+    function showDetailModal(name, category, description, hours, price, link) {
+        document.getElementById("modalTitle").innerText = name;
+        document.getElementById("modalCategory").innerText = category;
+        // XSS 방지를 위해 sanitize가 필요할 수 있으나, 현재는 문자열 그대로 사용
+        document.getElementById("modalDescription").innerText = description;
+        document.getElementById("modalHours").innerText = hours;
+        document.getElementById("modalPrice").innerText = '$' + price;
+        document.getElementById("modalLink").href = link;
+
+        modal.style.display = "block";
+    }
+
+    // 2. 모달 닫기 (X 버튼)
+    closeBtn.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // 3. 모달 닫기 (모달 외부 클릭)
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+
 </body>
 </html>
