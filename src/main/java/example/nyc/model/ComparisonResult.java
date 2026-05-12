@@ -12,4 +12,5 @@ public class ComparisonResult {
     private String recommendationText;  // 이 옵션에 대한 맞춤 추천 메시지
     private boolean isBestDeal;         // 최저가 여부
     private String purchaseLink;        // 해당 옵션의 최종 구매 링크
+    private String lastUpdated;         // 가격 마지막 업데이트 시각 (MM/dd HH:mm)
 }

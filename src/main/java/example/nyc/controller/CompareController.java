@@ -1,6 +1,7 @@
 package example.nyc.controller;
 
 import example.nyc.model.ComparisonResult;
+import example.nyc.service.ExchangeRateService;
 import example.nyc.service.PriceCalculatorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,12 +14,8 @@ import java.util.List;
 @Controller
 public class CompareController {
 
-    private final PriceCalculatorService calculatorService;
-
-    @Autowired
-    public CompareController(PriceCalculatorService calculatorService) {
-        this.calculatorService = calculatorService;
-    }
+    @Autowired private PriceCalculatorService calculatorService;
+    @Autowired private ExchangeRateService exchangeRateService;
 
     @PostMapping("/compare")
     public String compare(
@@ -29,12 +26,14 @@ public class CompareController {
             return "redirect:/";
         }
 
-        // 1. 상세 가격 비교 및 분석 서비스 호출
         List<ComparisonResult> results = calculatorService.comparePricesAndAnalyze(selectedIds);
 
         model.addAttribute("comparisonResults", results);
         model.addAttribute("selectedCount", selectedIds.size());
+        model.addAttribute("exchangeRate", exchangeRateService.getUsdToKrwRate());
+        model.addAttribute("exchangeRateRealtime", exchangeRateService.isRealtime());
+        model.addAttribute("exchangeRateFormatted", exchangeRateService.getFormattedRate());
 
-        return "result"; // src/main/resources/templates/result.html
+        return "result";
     }
 }

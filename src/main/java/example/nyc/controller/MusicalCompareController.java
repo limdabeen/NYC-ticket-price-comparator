@@ -1,6 +1,8 @@
 package example.nyc.controller;
 
 import example.nyc.model.ComparisonResult;
+import example.nyc.model.Musical;
+import example.nyc.service.ExchangeRateService;
 import example.nyc.service.MusicalPriceCalculatorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,27 +15,23 @@ import java.util.List;
 @Controller
 public class MusicalCompareController {
 
-    private final MusicalPriceCalculatorService musicalPriceCalculatorService;
+    @Autowired private MusicalPriceCalculatorService musicalPriceCalculatorService;
+    @Autowired private ExchangeRateService exchangeRateService;
 
-    @Autowired
-    public MusicalCompareController(MusicalPriceCalculatorService musicalPriceCalculatorService) {
-        this.musicalPriceCalculatorService = musicalPriceCalculatorService;
-    }
-
-    // URL: /compare/musical?id=ALADDIN
     @GetMapping("/compare/musical")
-    public String compareMusicalPrices(
-            @RequestParam("id") String musicalId,
-            Model model) {
-
-        // 1. 서비스 로직 호출: ID에 해당하는 뮤지컬의 모든 판매처 가격 비교
+    public String compareMusicalPrices(@RequestParam("id") String musicalId, Model model) {
         List<ComparisonResult> results = musicalPriceCalculatorService.comparePricesAndAnalyze(musicalId);
 
-        // 2. 결과 데이터를 뷰에 전달
-        model.addAttribute("musicalName", musicalId.replace("_", " ").toUpperCase()); // 제목 표시용
-        model.addAttribute("results", results);
+        Musical musical = musicalPriceCalculatorService.getAllMusicals().stream()
+                .filter(m -> m.getId().equals(musicalId))
+                .findFirst().orElse(null);
 
-        // 3. 템플릿 반환
-        return "musical_result"; // src/main/resources/templates/musical_result.html 로 이동
+        model.addAttribute("musicalName", musical != null ? musical.getName() : musicalId);
+        model.addAttribute("results", results);
+        model.addAttribute("exchangeRate", exchangeRateService.getUsdToKrwRate());
+        model.addAttribute("exchangeRateRealtime", exchangeRateService.isRealtime());
+        model.addAttribute("exchangeRateFormatted", exchangeRateService.getFormattedRate());
+
+        return "musical_result";
     }
 }

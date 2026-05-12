@@ -5,58 +5,120 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>뮤지컬 가격 비교 결과</title>
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 20px; background-color: #f4f4f9; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-        h1 { text-align: center; color: #007bff; margin-bottom: 5px; }
-        h2 { text-align: center; color: #333; margin-top: 0; margin-bottom: 30px; font-weight: normal; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; color: #333; font-weight: bold; }
-        .best-deal td { background-color: #d4edda; font-weight: bold; border-left: 5px solid #28a745; color: #155724; }
-        .savings { color: #28a745; font-weight: bold; }
-        .link a { text-decoration: none; color: #007bff; font-weight: bold; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif; margin: 0; background: #f0f2f5; }
+        .container { max-width: 960px; margin: 30px auto; background: white; padding: 36px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+
+        .header { text-align: center; margin-bottom: 28px; }
+        .header h1 { color: #1a73e8; font-size: 1.6em; margin-bottom: 6px; }
+        .header h2 { color: #333; font-size: 1.3em; font-weight: normal; margin: 0; }
+
+        .meta-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #f8f9fa; border-radius: 8px; padding: 10px 16px;
+            margin-bottom: 24px; font-size: 0.88em; color: #666;
+        }
+        .realtime-badge { color: #28a745; font-weight: bold; }
+        .base-badge { color: #888; }
+
+        .exchange-notice {
+            background: #fff8e1; border-left: 4px solid #ffc107;
+            padding: 8px 14px; border-radius: 4px; font-size: 0.85em; color: #795548;
+            margin-bottom: 20px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; color: #444; font-weight: bold; padding: 14px; text-align: left; border-bottom: 2px solid #dee2e6; }
+        td { padding: 14px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+
+        .best-deal td { background: #e8f5e9; }
+        .best-deal td:first-child { border-left: 4px solid #28a745; }
+
+        .vendor-name { font-weight: bold; font-size: 1em; color: #333; }
+        .badge-realtime { font-size: 0.72em; background: #e3f2fd; color: #1565c0; border-radius: 10px; padding: 2px 7px; margin-left: 5px; }
+        .badge-base     { font-size: 0.72em; background: #f5f5f5; color: #999; border-radius: 10px; padding: 2px 7px; margin-left: 5px; }
+        .badge-best     { font-size: 0.72em; background: #c8e6c9; color: #2e7d32; border-radius: 10px; padding: 2px 7px; margin-left: 5px; font-weight: bold; }
+
+        .price-usd { font-size: 1.25em; font-weight: bold; color: #d32f2f; }
+        .price-krw { font-size: 0.82em; color: #888; display: block; margin-top: 3px; }
+        .savings    { color: #28a745; font-weight: bold; }
+        .rec-text   { font-size: 0.87em; color: #555; line-height: 1.5; }
+        .link a     { color: #1a73e8; text-decoration: none; font-weight: bold; font-size: 0.92em; }
         .link a:hover { text-decoration: underline; }
-        .recommendation-text { font-size: 0.9em; color: #555; }
-        .back-link { display: block; text-align: center; margin-top: 30px; font-size: 1.1em; color: #007bff; text-decoration: none; }
+
+        .back-link { display: block; text-align: center; margin-top: 30px; color: #1a73e8; text-decoration: none; font-size: 1em; }
+        .back-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>가격 비교 결과</h1>
-    <h2 th:text="${musicalName} + ' 최저가 분석'">뮤지컬 최저가 분석</h2>
+    <div class="header">
+        <h1>가격 비교 결과</h1>
+        <h2 th:text="${musicalName} + ' 최저가 분석'">뮤지컬 최저가 분석</h2>
+    </div>
+
+    <div class="meta-bar">
+        <span>
+            <span class="realtime-badge">● 실시간</span> 대행사 사이트 직접 조회 &nbsp;|&nbsp;
+            <span class="base-badge">○ 기준가</span> 조회 실패 시 최근 기준가 사용
+        </span>
+        <span th:if="${results != null and !results.isEmpty() and results[0].lastUpdated != null}">
+            마지막 업데이트: <strong th:text="${results[0].lastUpdated}">--</strong>
+        </span>
+    </div>
+
+    <div class="exchange-notice">
+        <span th:if="${exchangeRateRealtime}">
+            💱 실시간 환율 적용 중 &nbsp;|&nbsp; $1 ≈ ₩<span th:text="${exchangeRateFormatted}">1,380</span>
+            &nbsp;<span style="font-size:0.85em; color:#999;">(open.er-api.com 기준, 1시간 캐시)</span>
+        </span>
+        <span th:unless="${exchangeRateRealtime}">
+            💱 환율 조회 실패 — 기준환율 적용 중 &nbsp;|&nbsp; $1 ≈ ₩<span th:text="${exchangeRateFormatted}">1,380</span>
+        </span>
+    </div>
 
     <table>
         <thead>
         <tr>
-            <th>판매처/옵션</th>
-            <th>최종 가격 ($)</th>
-            <th>절약 금액 ($)</th>
-            <th>추천 및 장점</th>
-            <th>구매 링크</th>
+            <th>판매처</th>
+            <th>가격 (USD / KRW)</th>
+            <th>절약 금액</th>
+            <th>특징</th>
+            <th>구매</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="result : ${results}"
             th:class="${result.isBestDeal() ? 'best-deal' : ''}">
 
-            <td th:text="${result.optionName}">판매처 이름</td>
-            <td th:text="'$' + ${result.finalPrice}">$140</td>
-
             <td>
-                        <span th:if="${result.savings > 0}" class="savings">
-                            $[[${result.savings}]] 절약
-                        </span>
-                <span th:unless="${result.savings > 0}">
-                            -
-                        </span>
+                <span class="vendor-name" th:text="${result.optionName}">판매처</span>
+                <span th:if="${result.isBestDeal()}" class="badge-best">최저가</span>
+                <!-- [실시간] / [기준가] 태그를 badge로 변환 -->
+                <span th:if="${#strings.contains(result.recommendationText, '[실시간]')}" class="badge-realtime">실시간</span>
+                <span th:if="${#strings.contains(result.recommendationText, '[기준가]')}"  class="badge-base">기준가</span>
             </td>
 
             <td>
-                <div th:utext="${result.recommendationText}" class="recommendation-text">추천 메시지</div>
+                <span class="price-usd" th:text="'$' + ${result.finalPrice}">$0</span>
+                <span class="price-krw" th:text="'≈ ₩' + ${#numbers.formatInteger(result.finalPrice * exchangeRate, 3, 'COMMA')}">≈ ₩0</span>
+            </td>
+
+            <td>
+                <span th:if="${result.savings > 0}" class="savings" th:text="'$' + ${result.savings} + ' 절약'">$0 절약</span>
+                <span th:unless="${result.savings > 0}">-</span>
+            </td>
+
+            <td>
+                <!-- [실시간] / [기준가] 태그는 badge로 표시했으니 추천 텍스트에서 제거 -->
+                <div class="rec-text"
+                     th:text="${#strings.replace(#strings.replace(result.recommendationText, ' [실시간]', ''), ' [기준가]', '')}">
+                </div>
             </td>
 
             <td class="link">
-                <a th:href="${result.purchaseLink}" target="_blank">바로 가기 →</a>
+                <a th:if="${result.purchaseLink != null}" th:href="${result.purchaseLink}" target="_blank">바로가기 →</a>
+                <span th:unless="${result.purchaseLink != null}">-</span>
             </td>
         </tr>
         </tbody>

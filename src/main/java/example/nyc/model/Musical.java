@@ -31,4 +31,10 @@ public class Musical {
     private String athomeTripLink;
     private String tamiceLink;
     private String pureunTourLink;
+
+    public int getLowestPrice() {
+        return java.util.stream.IntStream.of(
+                ticketMasterPrice, cheapestSitePrice, athomeTripPrice, tamicePrice, pureunTourPrice
+        ).filter(p -> p > 0).min().orElse(0);
+    }
 }

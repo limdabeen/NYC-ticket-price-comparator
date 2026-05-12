@@ -1,7 +1,9 @@
 package example.nyc.service;
 
-import example.nyc.model.Musical;
 import example.nyc.model.ComparisonResult;
+import example.nyc.model.Musical;
+import example.nyc.model.ScrapedPrice;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -10,133 +12,161 @@ import java.util.stream.Collectors;
 @Service
 public class MusicalPriceCalculatorService {
 
-    // 1. 초기 데이터: 뮤지컬 목록 (알라딘 데이터 포함)
+    @Autowired
+    private MusicalPriceScraperService scraper;
+
     private final List<Musical> allMusicals = Arrays.asList(
-            new Musical("LION_KING", "라이온 킹", "뮤지컬", "매우 높음",
-                    150, 140, 135, 145, 155, // 가격 순서: 티켓마스터, 최저가사이트, 앳홈트립, 타미스, 푸른투어
-                    "https://tm.link/lionking", "https://cheapest.link/lionking",
-                    "https://athome.link/lionking", "https://tamice.link/lionking", "https://pureun.link/lionking"),
+        Musical.builder()
+            .id("LION_KING").name("라이온 킹").category("뮤지컬").recommendationScore("매우 높음")
+            .ticketMasterPrice(150).cheapestSitePrice(140).athomeTripPrice(135).tamicePrice(145).pureunTourPrice(155)
+            .ticketMasterLink("https://www.ticketmaster.com/the-lion-king-new-york/event/")
+            .cheapestSiteLink("https://www.broadway.com/shows/lion-king/")
+            .athomeTripLink("https://www.athometrip.com/product/lion-king/")
+            .tamiceLink("https://www.tamice.com/musicals/lion-king")
+            .pureunTourLink("https://pureuntour.com/nyc/lion-king")
+            .build(),
 
-            new Musical("WICKED", "위키드", "뮤지컬", "높음",
-                    140, 130, 138, 125, 130, // 가격 순서: 티켓마스터, 최저가사이트, 앳홈트립, 타미스, 푸른투어
-                    "https://tm.link/wicked", "https://cheapest.link/wicked",
-                    "https://athome.link/wicked", "https://tamice.link/wicked", "https://pureun.link/wicked"),
+        Musical.builder()
+            .id("WICKED").name("위키드").category("뮤지컬").recommendationScore("높음")
+            .ticketMasterPrice(140).cheapestSitePrice(130).athomeTripPrice(138).tamicePrice(125).pureunTourPrice(130)
+            .ticketMasterLink("https://www.ticketmaster.com/wicked-new-york/event/")
+            .cheapestSiteLink("https://www.broadway.com/shows/wicked/")
+            .athomeTripLink("https://www.athometrip.com/product/wicked/")
+            .tamiceLink("https://www.tamice.com/musicals/wicked")
+            .pureunTourLink("https://pureuntour.com/nyc/wicked")
+            .build(),
 
-            new Musical("ALADDIN", "알라딘", "뮤지컬", "높음",
-                    160, 145, 139, 155, 140, // 가격 순서: 티켓마스터, 최저가사이트, 앳홈트립, 타미스, 푸른투어
-                    "https://www.ticketmaster.com/aladdin-tickets/artist/1858715?ac_link=broadway_guide_aladdin", // 티켓마스터
-                    "https://broadway.link/cheapest/aladdin", // 최저가 사이트 (임시)
-                    "https://athometrip.com/product/aladdin/", // 앳홈트립
-                    "https://www.tamice.com/musicals/aladdin", // 타미스
-                    "https://pureun.link/aladdin") // 푸른투어 (임시)
+        Musical.builder()
+            .id("ALADDIN").name("알라딘").category("뮤지컬").recommendationScore("높음")
+            .ticketMasterPrice(160).cheapestSitePrice(145).athomeTripPrice(139).tamicePrice(155).pureunTourPrice(140)
+            .ticketMasterLink("https://www.ticketmaster.com/aladdin-tickets/artist/1858715")
+            .cheapestSiteLink("https://www.broadway.com/shows/aladdin/")
+            .athomeTripLink("https://www.athometrip.com/product/aladdin/")
+            .tamiceLink("https://www.tamice.com/musicals/aladdin")
+            .pureunTourLink("https://pureuntour.com/nyc/aladdin")
+            .build(),
+
+        Musical.builder()
+            .id("HAMILTON").name("해밀턴").category("뮤지컬").recommendationScore("매우 높음")
+            .ticketMasterPrice(200).cheapestSitePrice(180).athomeTripPrice(185).tamicePrice(195).pureunTourPrice(190)
+            .ticketMasterLink("https://www.ticketmaster.com/hamilton-new-york/event/")
+            .cheapestSiteLink("https://www.broadway.com/shows/hamilton/")
+            .athomeTripLink("https://www.athometrip.com/product/hamilton/")
+            .tamiceLink("https://www.tamice.com/musicals/hamilton")
+            .pureunTourLink("https://pureuntour.com/nyc/hamilton")
+            .build(),
+
+        Musical.builder()
+            .id("CHICAGO").name("시카고").category("뮤지컬").recommendationScore("보통")
+            .ticketMasterPrice(100).cheapestSitePrice(90).athomeTripPrice(95).tamicePrice(98).pureunTourPrice(102)
+            .ticketMasterLink("https://www.ticketmaster.com/chicago-the-musical-new-york/event/")
+            .cheapestSiteLink("https://www.broadway.com/shows/chicago/")
+            .athomeTripLink("https://www.athometrip.com/product/chicago/")
+            .tamiceLink("https://www.tamice.com/musicals/chicago")
+            .pureunTourLink("https://pureuntour.com/nyc/chicago")
+            .build(),
+
+        Musical.builder()
+            .id("PHANTOM").name("오페라의 유령 (리바이벌)").category("뮤지컬").recommendationScore("높음")
+            .ticketMasterPrice(130).cheapestSitePrice(120).athomeTripPrice(125).tamicePrice(128).pureunTourPrice(132)
+            .ticketMasterLink("https://www.ticketmaster.com/the-phantom-of-the-opera-new-york/event/")
+            .cheapestSiteLink("https://www.broadway.com/shows/phantom-of-the-opera/")
+            .athomeTripLink("https://www.athometrip.com/product/phantom/")
+            .tamiceLink("https://www.tamice.com/musicals/phantom")
+            .pureunTourLink("https://pureuntour.com/nyc/phantom")
+            .build()
     );
 
-    // 컨트롤러에서 전체 뮤지컬 목록을 가져갈 Getter
     public List<Musical> getAllMusicals() {
         return allMusicals;
     }
 
-    /**
-     * 특정 뮤지컬의 모든 판매처 가격을 비교하고 결과를 반환합니다.
-     * @param musicalId 사용자가 선택한 뮤지컬 ID
-     * @return 각 판매처별 가격 및 최저가 여부를 담은 ComparisonResult 리스트
-     */
     public List<ComparisonResult> comparePricesAndAnalyze(String musicalId) {
-
-        // 1. 선택한 뮤지컬 데이터 찾기
-        Musical selectedMusical = allMusicals.stream()
+        Musical musical = allMusicals.stream()
                 .filter(m -> m.getId().equals(musicalId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid Musical ID: " + musicalId));
 
-        // 2. 가격 비교 대상 목록 생성
-        List<ComparisonResult> results = new ArrayList<>();
+        // 실시간 스크래핑으로 가격 조회 (실패 시 기준가 폴백)
+        ScrapedPrice tmPrice     = scraper.getTicketMasterPrice(musicalId, musical.getTicketMasterLink());
+        ScrapedPrice athomePrice = scraper.getAthomeTripPrice(musicalId, musical.getAthomeTripLink());
+        ScrapedPrice tamicePrice = scraper.getTamicePrice(musicalId, musical.getTamiceLink());
+        ScrapedPrice pureunPrice = scraper.getPureunTourPrice(musicalId, musical.getPureunTourLink());
 
-        // 가격 및 링크를 Map으로 정리
-        Map<String, Integer> priceMap = new LinkedHashMap<>();
-        priceMap.put("티켓마스터(공식)", selectedMusical.getTicketMasterPrice());
-        priceMap.put("최저가 발권 사이트", selectedMusical.getCheapestSitePrice());
-        priceMap.put("앳홈트립", selectedMusical.getAthomeTripPrice());
-        priceMap.put("타미스", selectedMusical.getTamicePrice());
-        priceMap.put("푸른투어", selectedMusical.getPureunTourPrice());
+        // cheapestSite는 스크래퍼 없이 기준가 사용
+        ScrapedPrice cheapestPrice = new ScrapedPrice(musical.getCheapestSitePrice(), false);
+
+        Map<String, ScrapedPrice> priceMap = new LinkedHashMap<>();
+        priceMap.put("티켓마스터(공식)", tmPrice);
+        priceMap.put("브로드웨이닷컴", cheapestPrice);
+        priceMap.put("앳홈트립", athomePrice);
+        priceMap.put("타미스", tamicePrice);
+        priceMap.put("푸른투어", pureunPrice);
 
         Map<String, String> linkMap = new LinkedHashMap<>();
-        linkMap.put("티켓마스터(공식)", selectedMusical.getTicketMasterLink());
-        linkMap.put("최저가 발권 사이트", selectedMusical.getCheapestSiteLink());
-        linkMap.put("앳홈트립", selectedMusical.getAthomeTripLink());
-        linkMap.put("타미스", selectedMusical.getTamiceLink());
-        linkMap.put("푸른투어", selectedMusical.getPureunTourLink());
+        linkMap.put("티켓마스터(공식)", musical.getTicketMasterLink());
+        linkMap.put("브로드웨이닷컴", musical.getCheapestSiteLink());
+        linkMap.put("앳홈트립", musical.getAthomeTripLink());
+        linkMap.put("타미스", musical.getTamiceLink());
+        linkMap.put("푸른투어", musical.getPureunTourLink());
 
-        // 3. 최저 가격 찾기 (0은 유효하지 않은 가격으로 간주하고 제외)
-        Optional<Integer> minPrice = priceMap.values().stream()
-                .filter(price -> price > 0)
-                .min(Comparator.naturalOrder());
+        int bestPrice = priceMap.values().stream()
+                .mapToInt(ScrapedPrice::getPrice)
+                .filter(p -> p > 0)
+                .min().orElse(0);
 
-        // 최고 가격 찾기 (절약 금액 계산을 위한 기준)
-        Optional<Integer> maxPrice = priceMap.values().stream()
-                .filter(price -> price > 0)
-                .max(Comparator.naturalOrder());
+        int worstPrice = priceMap.values().stream()
+                .mapToInt(ScrapedPrice::getPrice)
+                .filter(p -> p > 0)
+                .max().orElse(bestPrice);
 
-        int bestPrice = minPrice.orElse(0);
-        int worstPrice = maxPrice.orElse(bestPrice); // 최고가가 없으면 최저가를 기준
+        // 스크래핑 시각 (가장 최신 실시간 항목 기준, 없으면 기준가 항목)
+        String lastUpdated = priceMap.values().stream()
+                .filter(ScrapedPrice::isRealtime)
+                .findFirst()
+                .map(ScrapedPrice::getFormattedTime)
+                .orElseGet(() -> priceMap.values().stream()
+                        .findFirst().map(ScrapedPrice::getFormattedTime).orElse("-"));
 
-        // 4. ComparisonResult 리스트 생성
-        for (Map.Entry<String, Integer> entry : priceMap.entrySet()) {
-            String optionName = entry.getKey();
-            int currentPrice = entry.getValue();
-            String purchaseLink = linkMap.get(optionName);
+        List<ComparisonResult> results = new ArrayList<>();
 
-            if (currentPrice > 0) { // 유효한 가격만 포함
-                int savingsFromWorst = worstPrice - currentPrice;
+        for (Map.Entry<String, ScrapedPrice> entry : priceMap.entrySet()) {
+            String vendorName = entry.getKey();
+            ScrapedPrice sp = entry.getValue();
+            int price = sp.getPrice();
 
-                results.add(ComparisonResult.builder()
-                        .optionName(optionName)
-                        .finalPrice(currentPrice)
-                        .savings(savingsFromWorst)
-                        .isBestDeal(currentPrice == bestPrice && bestPrice > 0)
-                        .purchaseLink(purchaseLink)
-                        .recommendationText(getRecommendationText(optionName))
-                        .build());
-            }
+            if (price <= 0) continue;
+
+            int savings = worstPrice - price;
+            boolean isBest = price == bestPrice;
+            String realtimeTag = sp.isRealtime() ? " [실시간]" : " [기준가]";
+            String recText = getRecommendationText(vendorName) + realtimeTag;
+            if (isBest) recText += " (최저가! $" + savings + " 절약 가능)";
+
+            results.add(ComparisonResult.builder()
+                    .optionName(vendorName)
+                    .finalPrice(price)
+                    .savings(savings)
+                    .isBestDeal(isBest)
+                    .purchaseLink(linkMap.get(vendorName))
+                    .recommendationText(recText)
+                    .lastUpdated(lastUpdated)
+                    .build());
         }
 
-        // 5. 최저가 옵션 식별 및 절약액 최종 반영 (추천 메시지 업데이트)
-        results.replaceAll(res -> {
-            String recText = res.isBestDeal()
-                    ? (res.getRecommendationText() + " (최저가! $" + res.getSavings() + " 절약 가능)")
-                    : res.getRecommendationText();
-
-            return ComparisonResult.builder()
-                    .optionName(res.getOptionName())
-                    .finalPrice(res.getFinalPrice())
-                    .savings(res.getSavings())
-                    .isBestDeal(res.isBestDeal())
-                    .purchaseLink(res.getPurchaseLink())
-                    .recommendationText(recText)
-                    .build();
-        });
-
-
         return results.stream()
-                .sorted(Comparator.comparing(ComparisonResult::getFinalPrice)) // 가격 낮은 순으로 정렬
+                .sorted(Comparator.comparing(ComparisonResult::getFinalPrice))
                 .collect(Collectors.toList());
     }
 
-    // 판매처별 추천 메시지 생성 로직
     private String getRecommendationText(String vendor) {
-        switch (vendor) {
-            case "티켓마스터(공식)":
-                return "공식 사이트로 가장 안전하게 발권할 수 있습니다. 가격은 다소 높을 수 있습니다.";
-            case "최저가 발권 사이트":
-                return "다양한 뮤지컬의 최저가 티켓을 취급합니다. (취소/환불 정책 확인 필수)";
-            case "앳홈트립":
-                return "한국 여행객 특화 서비스와 현지 지원이 장점입니다. 가격 비교 추천!";
-            case "타미스":
-                return "현지 라운지 이용 등 추가 혜택을 제공하며, 종종 할인 이벤트를 진행합니다.";
-            case "푸른투어":
-                return "주로 단체 여행객을 위한 안정적인 티켓을 제공합니다.";
-            default:
-                return "가격과 링크를 확인해 보세요.";
-        }
+        return switch (vendor) {
+            case "티켓마스터(공식)" -> "공식 사이트로 가장 안전하게 발권. 가격은 다소 높을 수 있습니다.";
+            case "브로드웨이닷컴"  -> "다양한 뮤지컬의 최저가 티켓 취급. (취소/환불 정책 확인 필수)";
+            case "앳홈트립"       -> "한국 여행객 특화 서비스 · 현지 지원 · 가격 비교 추천!";
+            case "타미스"         -> "타임스퀘어 라운지 등 추가 혜택 제공. 종종 할인 이벤트 진행.";
+            case "푸른투어"       -> "단체 여행객 대상 안정적인 티켓 제공.";
+            default               -> "가격과 링크를 확인해 보세요.";
+        };
     }
 }

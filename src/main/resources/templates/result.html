@@ -1,53 +1,99 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>뉴욕 패스 비교 결과</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뉴욕 패스 비교 결과</title>
     <style>
-        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 20px; }
-        .result-table { width: 80%; border-collapse: collapse; margin-top: 20px; }
-        .result-table th, .result-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .result-table th { background-color: #f2f2f2; }
-        .best-deal { background-color: #d4edda; font-weight: bold; }
-        .recommendation { margin-top: 30px; padding: 15px; border: 2px solid #007bff; border-radius: 5px; }
-        .price { color: #dc3545; font-weight: bold; }
-        .savings { color: #28a745; font-weight: bold; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif; margin: 0; background: #f0f2f5; }
+        .container { max-width: 960px; margin: 30px auto; background: white; padding: 36px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+
+        .header { text-align: center; margin-bottom: 28px; }
+        .header h1 { color: #1a73e8; font-size: 1.6em; margin-bottom: 6px; }
+        .header p  { color: #666; font-size: 1em; margin: 0; }
+
+        .exchange-notice {
+            background: #fff8e1; border-left: 4px solid #ffc107;
+            padding: 8px 14px; border-radius: 4px; font-size: 0.85em; color: #795548;
+            margin-bottom: 20px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; color: #444; font-weight: bold; padding: 14px; text-align: left; border-bottom: 2px solid #dee2e6; }
+        td { padding: 14px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+
+        .best-deal td { background: #e8f5e9; }
+        .best-deal td:first-child { border-left: 4px solid #28a745; }
+
+        .option-name  { font-weight: bold; color: #333; }
+        .badge-best   { font-size: 0.72em; background: #c8e6c9; color: #2e7d32; border-radius: 10px; padding: 2px 7px; margin-left: 5px; font-weight: bold; }
+
+        .price-usd { font-size: 1.2em; font-weight: bold; color: #d32f2f; }
+        .price-krw { font-size: 0.82em; color: #888; display: block; margin-top: 3px; }
+        .savings   { color: #28a745; font-weight: bold; }
+        .rec-text  { font-size: 0.87em; color: #555; line-height: 1.5; }
+        .link a    { color: #1a73e8; text-decoration: none; font-weight: bold; }
+        .link a:hover { text-decoration: underline; }
+
+        .back-link { display: block; text-align: center; margin-top: 30px; color: #1a73e8; text-decoration: none; font-size: 1em; }
+        .back-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-<h1>✅ 가격 비교 결과</h1>
-<p>선택하신 관광지 개수: <span th:text="${selectedCount}">0</span>개</p>
+<div class="container">
+    <div class="header">
+        <h1>✅ 패스 가격 비교 결과</h1>
+        <p>선택하신 관광지 <strong th:text="${selectedCount}">0</strong>개 기준 성인 1인 가격 비교</p>
+    </div>
 
-<h2>💵 예상 비용 비교 (성인 1인 기준)</h2>
+    <div class="exchange-notice">
+        <span th:if="${exchangeRateRealtime}">
+            💱 실시간 환율 적용 중 &nbsp;|&nbsp; $1 ≈ ₩<span th:text="${exchangeRateFormatted}">1,380</span>
+            &nbsp;<span style="font-size:0.85em; color:#999;">(open.er-api.com 기준, 1시간 캐시)</span>
+        </span>
+        <span th:unless="${exchangeRateRealtime}">
+            💱 환율 조회 실패 — 기준환율 적용 중 &nbsp;|&nbsp; $1 ≈ ₩<span th:text="${exchangeRateFormatted}">1,380</span>
+        </span>
+    </div>
 
-<table class="result-table">
-    <tr>
-        <th>구매 옵션</th>
-        <th>최종 비용 ($)</th>
-        <th>절약 금액</th>
-        <th>상세 분석 / 적합성</th>
-        <th>구매 링크</th>
-    </tr>
+    <table>
+        <thead>
+        <tr>
+            <th>구매 옵션</th>
+            <th>최종 비용 (USD / KRW)</th>
+            <th>절약 금액</th>
+            <th>상세 분석</th>
+            <th>구매 링크</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="result : ${comparisonResults}"
+            th:class="${result.isBestDeal ? 'best-deal' : ''}">
+            <td>
+                <span class="option-name" th:text="${result.optionName}">옵션 이름</span>
+                <span th:if="${result.isBestDeal}" class="badge-best">최저가</span>
+            </td>
+            <td>
+                <span class="price-usd" th:text="'$' + ${result.finalPrice}">$0</span>
+                <span class="price-krw" th:text="'≈ ₩' + ${#numbers.formatInteger(result.finalPrice * exchangeRate, 3, 'COMMA')}">≈ ₩0</span>
+            </td>
+            <td>
+                <span th:if="${result.savings > 0}" class="savings" th:text="'$' + ${result.savings} + ' 절약'">절약</span>
+                <span th:unless="${result.savings > 0}">-</span>
+            </td>
+            <td>
+                <span class="rec-text" th:utext="${result.recommendationText}">추천 메시지</span>
+            </td>
+            <td class="link">
+                <a th:if="${result.purchaseLink != null}" th:href="${result.purchaseLink}" target="_blank">구매하기 →</a>
+                <span th:unless="${result.purchaseLink != null}">해당 없음</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
-    <tr th:each="result : ${comparisonResults}" th:class="${result.isBestDeal ? 'best-deal' : ''}">
-        <td>
-            <span th:text="${result.optionName}">옵션 이름</span>
-            <span th:if="${result.isBestDeal}" style="color: red;">(최저가!)</span>
-        </td>
-        <td class="price" th:text="${result.finalPrice}">0</td>
-        <td class="savings" th:text="${result.savings > 0 ? '$' + result.savings : '-'}"></td>
-        <td>
-            <span th:utext="${result.recommendationText}">상세 추천 메시지</span>
-        </td>
-        <td>
-            <a th:if="${result.purchaseLink != null}" th:href="${result.purchaseLink}" target="_blank">
-                구매하기
-            </a>
-            <span th:unless="${result.purchaseLink != null}">해당 없음</span>
-        </td>
-    </tr>
-</table>
-
-<p style="margin-top: 30px;"><a href="/">다시 비교하기</a></p>
+    <a href="/" class="back-link">← 다시 비교하기</a>
+</div>
 </body>
 </html>
